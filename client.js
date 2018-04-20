@@ -6,35 +6,10 @@
 
 const express = require('express');
 const path = require('path');
+const PORT = process.env.PORT || 5000;
 const app = express();
-let inputMonth, inputDay, inputYear;
-let months = [
-  'january',
-  'jan',
-  'february',
-  'feb',
-  'march',
-  'mar',
-  'april',
-  'apr',
-  'may',
-  'june',
-  'jun',
-  'july',
-  'jul',
-  'august',
-  'aug',
-  'september',
-  'sep',
-  'october',
-  'oct',
-  'november',
-  'nov',
-  'december',
-  'dec'
-];
 
-const checkTime = (input) => {
+module.exports.checkTime = (input) => {
   let timeRegExp = /(\d+):(\d{2}):(\d{2})/gi; //dd:dd:dd || d:dd:dd
   let time = timeRegExp.exec(input);
   if (time) {
@@ -45,37 +20,63 @@ const checkTime = (input) => {
   }
 }
 
-const checkYear = (input) => {
-  let yearRegExp = /([\d])+$/gi
+module.exports.checkYear = (input) => {
+  let yearRegExp = /(?![\:])([\d]){4}/gi
   let year = yearRegExp.exec(input)
   //Add 20 if only two digits are inputed (e.g. 17 becomes 2017)
   if (year) return (year[0].length == 2 ? '20' + year[0] : year[0]);
 };
 
-const checkMonth = (input) => {
+module.exports.checkMonth = (input) => {
+  let months = [
+    'january',
+    'jan',
+    'february',
+    'feb',
+    'march',
+    'mar',
+    'april',
+    'apr',
+    'may',
+    'june',
+    'jun',
+    'july',
+    'jul',
+    'august',
+    'aug',
+    'september',
+    'sep',
+    'october',
+    'oct',
+    'november',
+    'nov',
+    'december',
+    'dec'
+  ];
   for (i = 0; i < months.length; i++) {
     if (input.toLowerCase().includes(months[i].toLowerCase())) return months[i];
   };
 };
 
-const checkDay = (input) => {
-  let dayRegExp = /(?!\D)([\d]{1,2})(?:[^\n\d])/ig; // two digits surrounded by non-digit characters
+module.exports.checkDay = (input) => {
+  let dayRegExp = /(?:[ A-z])([\d]{1,2})(?:\D)/gi; // two digits surrounded by non-digit characters
   let day = dayRegExp.exec(input);
   if (day && day[1] < 31) return day[1]; // ensure the date is not over 31
 };
 
-const checkString = (input) => {
-  inputTime = checkTime(input);
-  inputMonth = checkMonth(input);
-  inputYear = checkYear(input);
-  inputDay = checkDay(input);
+module.exports.checkString = (input) => {
+  let inputTime = this.checkTime(input);
+  let inputMonth = this.checkMonth(input);
+  let inputYear = this.checkYear(input);
+  let inputDay = this.checkDay(input);
   if (!inputMonth || !inputDay || !inputYear) return false;
-  else return true;
+  else return (inputTime ? inputTime : '') + ' ' + inputMonth + ' ' + inputDay + ' ' + inputYear;
 };
 
-const calcDate = (input) => {
+module.exports.calcDate = (input) => {
   if (input.length > 0) {
     // check for a unix time.
+    let checkStringResult = this.checkString(input)
     if ((Number(input)) % 1 === 0) {
       let date = new Date(Number(input * 1000));
       return {
@@ -89,9 +90,8 @@ const calcDate = (input) => {
         'Unixtime': date.getTime() / 1000,
         'Natural time': date.toString()
       }
-    } else if (checkString(input)) { // for natural time.
-      let inputDate = (inputTime ? inputTime : '') + ' ' + inputMonth + ' ' + inputDay + ' ' + inputYear;
-      let date = new Date(inputDate);
+    } else if (checkStringResult) { // for natural time.
+      let date = new Date(checkStringResult);
       return {
         'Unixtime': date.getTime() / 1000,
         'Natural time': date.toString()
@@ -112,9 +112,11 @@ app.get('/', (req, res) => {
 });
 
 app.get('/:date', (req, res) => {
-  let response = calcDate(req.params.date);
+  let response = this.calcDate(req.params.date);
   res.setHeader('Content-Type', 'application/json');
   res.send(JSON.stringify(response));
 });
 
-app.listen(3000);
+app.listen(PORT, ()=>{
+  console.log('Running');
+});
