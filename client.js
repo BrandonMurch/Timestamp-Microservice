@@ -117,6 +117,6 @@ app.get('/:date', (req, res) => {
   res.send(JSON.stringify(response));
 });
 
-app.listen(PORT, ()=>{
+app.listen(PORT, () => {
   console.log('Running');
 });
